@@ -62,24 +62,56 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
+% Map y vector into a binary vector of 1's and 0's 
+ybin = zeros(m, num_labels);
+for i = 1:m
+    ybin(i, mod(y(i), num_labels + 1)) = 1;
+end
 
+% Add ones to the X data matrix for layer 1 (input layer) and sigmoid
+A1 = [ones(m, 1) X];
+A2 = sigmoid(A1 * Theta1');
 
+% Add ones to the A2 data matrix for layer 2 (hidden layer) and sigmoid
+A2 = [ones(m, 1) A2];
+A3 = sigmoid(A2 * Theta2');
 
+% Cost
+J = -1.0/m * sum( sum( (ybin .* log(A3)) + ((1 - ybin) .* log(1 - A3)), 2 ) )...
+    + lambda/(2 * m) * (sum( sum(Theta1(:, 2:end) .^ 2, 2) ) + sum( sum(Theta2(:, 2:end) .^ 2, 2) ));
 
+% Gradients
+grad_1 = zeros(size(Theta1));
+grad_2 = zeros(size(Theta2));
+for t = 1:m
+    % Feedforward
+    a_1 = [1; X(t,:)'];
+    
+    z_2 = Theta1 * a_1;
+    a_2 = sigmoid(z_2);
+    
+    a_2 = [1; a_2];
+    z_3 = Theta2 * a_2;
+    a_3 = sigmoid(z_3);
+    
+    % Output errors
+    delta_3 = a_3 - ybin(t,:)';
+    
+    % Hidden layer errors
+    delta_2 = Theta2(:, 2:end)' * delta_3 .* sigmoidGradient(z_2);
+    
+    % Accumulate gradients
+    grad_1 = grad_1 + delta_2 * a_1';
+    grad_2 = grad_2 + delta_3 * a_2';
+end
 
+% Divide by m and add regularization to the gradients
+Theta1_grad(:, 1) = 1.0/m * grad_1(:, 1);
+Theta1_grad(:, 2:end) = 1.0/m * grad_1(:, 2:end) + lambda/m * Theta1(:, 2:end);
 
-
-
-
-
-
-
-
-
-
-
-
-
+Theta2_grad(:, 1) = 1.0/m * grad_2(:, 1);
+Theta2_grad(:, 2:end) = 1.0/m * grad_2(:, 2:end) + lambda/m * Theta2(:, 2:end);
+ 
 % -------------------------------------------------------------
 
 % =========================================================================
